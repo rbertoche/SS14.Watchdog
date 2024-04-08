@@ -132,7 +132,7 @@ namespace SS14.Watchdog.Components.Updates
 
         private async Task GitCheckedSubmoduleUpdate(CancellationToken cancel = default)
         {
-            await CommandHelperChecked("Failed submodule update!", _repoPath, "git", new[] {"submodule", "update", "--init", "--depth=1", "--recursive"}, cancel);
+            await CommandHelperChecked("Failed submodule update!", _repoPath, "git", new[] {"submodule", "update", "--init", "--depth=1", "--recursive", "--force"}, cancel);
         }
 
         private async Task GitResetToFetchHead(CancellationToken cancel = default)
