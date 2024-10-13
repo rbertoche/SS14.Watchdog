@@ -20,10 +20,12 @@ namespace SS14.Watchdog.Components.Updates
     {
         private readonly ServerInstance _serverInstance;
         private readonly string _baseUrl;
+        private readonly string _mediaUrl;
         private readonly string _branch;
         private readonly bool _hybridACZ;
         private readonly ILogger<UpdateProviderGit> _logger;
         private readonly string _repoPath;
+        private readonly string _mediaPath;
         private readonly IConfiguration _configuration;
         private bool _newPackaging;
 
@@ -31,10 +33,12 @@ namespace SS14.Watchdog.Components.Updates
         {
             _serverInstance = serverInstanceInstance;
             _baseUrl = configuration.BaseUrl;
+            _mediaUrl = configuration.MediaUrl;
             _branch = configuration.Branch;
             _hybridACZ = configuration.HybridACZ;
             _logger = logger;
             _repoPath = Path.Combine(_serverInstance.InstanceDir, "source");
+            _mediaPath = Path.Combine(_serverInstance.InstanceDir, "source", "Resources", "Media");
             _configuration = config;
         }
 
@@ -135,6 +139,27 @@ namespace SS14.Watchdog.Components.Updates
             await CommandHelperChecked("Failed submodule update!", _repoPath, "git", new[] {"submodule", "update", "--init", "--depth=1", "--recursive", "--force"}, cancel);
         }
 
+        private async Task<bool> GitFetchMedia(CancellationToken cancel = default)
+        {
+            return await CommandHelper(_mediaPath, "git", new[] {"fetch", _mediaUrl}, cancel) == 0;
+        }
+
+        private async Task GitCloneMedia(CancellationToken cancel = default)
+	{
+                if (_mediaUrl != null) {
+                    _logger.LogDebug($"Clone {_mediaPath} from {_mediaUrl}");
+                    await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"clone", "--depth=1", _mediaUrl, _mediaPath }, cancel);
+                }
+
+        }
+        private async Task GitPullMedia(CancellationToken cancel = default)
+	{
+                if (_mediaUrl != null) {
+                    _logger.LogDebug($"Pull {_mediaPath} from {_mediaUrl}");
+                    await CommandHelperChecked("Failed pull for Media!", _mediaPath, "git", new[] {"pull", "--depth=1", _mediaUrl}, cancel);
+                }
+        }
+
         private async Task GitResetToFetchHead(CancellationToken cancel = default)
         {
             await CommandHelperChecked("Failed reset to fetch-head", _repoPath, "git", new[] {"reset", "--hard", "FETCH_HEAD"}, cancel);
@@ -155,6 +180,7 @@ namespace SS14.Watchdog.Components.Updates
                 await CommandHelperChecked("Failed initial clone!", "", "git", new[] {"clone", "--depth=1", _baseUrl, _repoPath}, cancel);
                 await GitFetchOrigin(cancel);
                 await GitResetToFetchHead(cancel);
+                await GitCloneMedia(cancel);
                 await GitCheckedSubmoduleUpdate(cancel);
             }
             catch (Exception)
@@ -177,6 +203,19 @@ namespace SS14.Watchdog.Components.Updates
             }
         }
 
+        private async Task<string?> MediaHead(string head)
+        {
+            try
+            {
+                return (await CommandHelperCheckedStdout("", _mediaPath, "git", new[] {"rev-parse", head})).Trim();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+
         // Updater and checker
 
         public override async Task<bool> CheckForUpdateAsync(string? currentVersion, CancellationToken cancel = default)
@@ -191,6 +230,10 @@ namespace SS14.Watchdog.Components.Updates
                 // Maybe the server's not up right now.
                 return false;
             }
+            string mediaCurrentVersion = null;
+            if (_mediaUrl != null){
+                mediaCurrentVersion = await MediaHead("HEAD");
+            }
 
             var head = await GitHead("HEAD");
             var fetchHead = await GitHead("FETCH_HEAD");
@@ -199,7 +242,19 @@ namespace SS14.Watchdog.Components.Updates
                 update = true;
             }
 
-            _logger.LogInformation($"Update check: {head ?? "No head"}, {fetchHead ?? "No fetch-head"} - updating: {update}");
+            if (_mediaUrl != null){
+                var mediaHead = await MediaHead("HEAD");
+                var mediaFetchHead = await MediaHead("FETCH_HEAD");
+                if (mediaHead != mediaFetchHead || mediaCurrentVersion != mediaFetchHead)
+                {
+                    update = true;
+                }
+
+                _logger.LogInformation($"Update check: {head ?? "No head"}, {fetchHead ?? "No fetch-head"} " +
+                                        $"{mediaHead ?? "No media head"}, {mediaFetchHead ?? "No media fetch-head"} - updating: {update}");
+            } else {
+                _logger.LogInformation($"Update check: {head ?? "No head"}, {fetchHead ?? "No fetch-head"} - updating: {update}");
+            }
             return update;
         }
 
@@ -228,6 +283,7 @@ namespace SS14.Watchdog.Components.Updates
                         if (!(await GitFetchOrigin(cancel)))
                             throw new Exception("Could not fetch origin");
                         await GitResetToFetchHead(cancel);
+                        await GitPullMedia(cancel);
                         await GitCheckedSubmoduleUpdate(cancel);
                     }
                     catch (Exception ex)
