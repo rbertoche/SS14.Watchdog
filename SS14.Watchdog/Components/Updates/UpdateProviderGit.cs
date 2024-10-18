@@ -148,16 +148,16 @@ namespace SS14.Watchdog.Components.Updates
 
         private async Task GitCloneMedia(CancellationToken cancel = default)
 	{
-                if (_mediaUrl != null) {
+                if(!Directory.Exists(_mediaGitPath) && _mediaUrl != null) {
                     _logger.LogDebug($"Clone {_mediaPath} from {_mediaUrl}");
-                    await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"--bare", "clone", "--depth=1", _mediaUrl, _mediaGitPath }, cancel);
+                    await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"--bare", "clone", "--depth=1", _mediaGitPath }, cancel);
                 }
 
         }
 
         private async Task GitResetToFetchHeadMedia(CancellationToken cancel = default)
         {
-            await CommandHelperChecked("Failed reset to fetch-head", _mediaPath, "git", new[] {"--git-dir", _mediaGitPath, "reset", "--hard", "FETCH_HEAD"}, cancel);
+            await CommandHelperChecked("Failed reset to fetch-head", _mediaPath, "git", new[] {"--work-tree=.", "--git-dir", _mediaGitPath, "reset", "--hard", "FETCH_HEAD"}, cancel);
         }
 
         private async Task GitResetToFetchHead(CancellationToken cancel = default)
@@ -181,6 +181,7 @@ namespace SS14.Watchdog.Components.Updates
                 await GitFetchOrigin(cancel);
                 await GitResetToFetchHead(cancel);
                 await GitCloneMedia(cancel);
+                await GitResetToFetchHeadMedia(cancel);
                 await GitCheckedSubmoduleUpdate(cancel);
             }
             catch (Exception)
