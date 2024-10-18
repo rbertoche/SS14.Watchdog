@@ -231,6 +231,10 @@ namespace SS14.Watchdog.Components.Updates
                 // Maybe the server's not up right now.
                 return false;
             }
+            if (!await GitCloneMedia(cancel))
+            {
+                return false;
+            }
             if (!await GitFetchMedia(cancel))
             {
                 // Maybe the server's not up right now.
