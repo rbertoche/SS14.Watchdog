@@ -152,12 +152,10 @@ namespace SS14.Watchdog.Components.Updates
                 }
 
         }
-        private async Task GitPullMedia(CancellationToken cancel = default)
-	{
-                if (_mediaUrl != null) {
-                    _logger.LogDebug($"Pull {_mediaPath} from {_mediaUrl}");
-                    await CommandHelperChecked("Failed pull for Media!", _mediaPath, "git", new[] {"pull", "--depth=1", _mediaUrl}, cancel);
-                }
+
+        private async Task GitResetToFetchHeadMedia(CancellationToken cancel = default)
+        {
+            await CommandHelperChecked("Failed reset to fetch-head", _mediaPath, "git", new[] {"reset", "--hard", "FETCH_HEAD"}, cancel);
         }
 
         private async Task GitResetToFetchHead(CancellationToken cancel = default)
@@ -230,6 +228,11 @@ namespace SS14.Watchdog.Components.Updates
                 // Maybe the server's not up right now.
                 return false;
             }
+            if (!await GitFetchMedia(cancel))
+            {
+                // Maybe the server's not up right now.
+                return false;
+            }
             string mediaCurrentVersion = null;
             if (_mediaUrl != null){
                 mediaCurrentVersion = await MediaHead("HEAD");
@@ -283,7 +286,9 @@ namespace SS14.Watchdog.Components.Updates
                         if (!(await GitFetchOrigin(cancel)))
                             throw new Exception("Could not fetch origin");
                         await GitResetToFetchHead(cancel);
-                        await GitPullMedia(cancel);
+                        if (!(await GitFetchMedia(cancel)))
+                            throw new Exception("Could not fetch media origin");
+                        await GitResetToFetchHeadMedia(cancel);
                         await GitCheckedSubmoduleUpdate(cancel);
                     }
                     catch (Exception ex)
