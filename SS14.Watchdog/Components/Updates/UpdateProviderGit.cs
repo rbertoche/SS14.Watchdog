@@ -26,6 +26,7 @@ namespace SS14.Watchdog.Components.Updates
         private readonly ILogger<UpdateProviderGit> _logger;
         private readonly string _repoPath;
         private readonly string _mediaPath;
+        private readonly string _mediaGitPath;
         private readonly IConfiguration _configuration;
         private bool _newPackaging;
 
