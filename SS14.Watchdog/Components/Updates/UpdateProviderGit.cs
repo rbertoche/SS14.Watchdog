@@ -39,6 +39,7 @@ namespace SS14.Watchdog.Components.Updates
             _logger = logger;
             _repoPath = Path.Combine(_serverInstance.InstanceDir, "source");
             _mediaPath = Path.Combine(_serverInstance.InstanceDir, "source", "Resources", "Media");
+            _mediaGitPath = Path.Combine(_serverInstance.InstanceDir, "Media.git");
             _configuration = config;
         }
 
@@ -141,21 +142,21 @@ namespace SS14.Watchdog.Components.Updates
 
         private async Task<bool> GitFetchMedia(CancellationToken cancel = default)
         {
-            return await CommandHelper(_mediaPath, "git", new[] {"fetch", _mediaUrl}, cancel) == 0;
+            return await CommandHelper(_mediaPath, "git", new[] {"--git-dir", _mediaGitPath, "fetch", _mediaUrl}, cancel) == 0;
         }
 
         private async Task GitCloneMedia(CancellationToken cancel = default)
 	{
                 if (_mediaUrl != null) {
                     _logger.LogDebug($"Clone {_mediaPath} from {_mediaUrl}");
-                    await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"clone", "--depth=1", _mediaUrl, _mediaPath }, cancel);
+                    await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"--git-dir", _mediaGitPath, "clone", "--depth=1", _mediaUrl, _mediaPath }, cancel);
                 }
 
         }
 
         private async Task GitResetToFetchHeadMedia(CancellationToken cancel = default)
         {
-            await CommandHelperChecked("Failed reset to fetch-head", _mediaPath, "git", new[] {"reset", "--hard", "FETCH_HEAD"}, cancel);
+            await CommandHelperChecked("Failed reset to fetch-head", _mediaPath, "git", new[] {"--git-dir", _mediaGitPath, "reset", "--hard", "FETCH_HEAD"}, cancel);
         }
 
         private async Task GitResetToFetchHead(CancellationToken cancel = default)
@@ -205,7 +206,7 @@ namespace SS14.Watchdog.Components.Updates
         {
             try
             {
-                return (await CommandHelperCheckedStdout("", _mediaPath, "git", new[] {"rev-parse", head})).Trim();
+                return (await CommandHelperCheckedStdout("", _mediaPath, "git", new[] {"--git-dir", _mediaGitPath, "rev-parse", head})).Trim();
             }
             catch (Exception)
             {
