@@ -151,7 +151,8 @@ namespace SS14.Watchdog.Components.Updates
                 if(!Directory.Exists(_mediaGitPath) && _mediaUrl != null) {
                     _logger.LogDebug($"Clone {_mediaPath} from {_mediaUrl}");
                     await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"--bare", "clone", "--depth=1", _mediaUrl, _mediaGitPath }, cancel);
-		    await GitResetMedia(cancel);
+                    Directory.CreateDirectory(_mediaPath);
+                    await GitResetMedia(cancel);
                 }
 
         }
