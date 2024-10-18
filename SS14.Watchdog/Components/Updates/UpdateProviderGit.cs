@@ -150,7 +150,7 @@ namespace SS14.Watchdog.Components.Updates
 	{
                 if (_mediaUrl != null) {
                     _logger.LogDebug($"Clone {_mediaPath} from {_mediaUrl}");
-                    await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"--git-dir", _mediaGitPath, "clone", "--depth=1", _mediaUrl, _mediaPath }, cancel);
+                    await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"--bare", "clone", "--depth=1", _mediaUrl, _mediaGitPath }, cancel);
                 }
 
         }
