@@ -239,13 +239,13 @@ namespace SS14.Watchdog.Components.Updates
             }
             await GitCloneMedia(cancel);
 
+            string mediaCurrentVersion = null;
             if (_mediaUrl != null){
                 if (!await GitFetchMedia(cancel))
                 {
                     // Maybe the server's not up right now.
                     return false;
                 }
-                string mediaCurrentVersion = null;
                 mediaCurrentVersion = await MediaHead("HEAD");
             }
 
