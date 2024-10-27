@@ -148,7 +148,10 @@ namespace SS14.Watchdog.Components.Updates
 
         private async Task GitCloneMedia(CancellationToken cancel = default)
 	{
-                if(!Directory.Exists(_mediaGitPath) && _mediaUrl != null) {
+		if (_mediaUrl == null){
+			return;
+		}
+                if(!Directory.Exists(_mediaGitPath)) {
                     _logger.LogDebug($"Clone {_mediaPath} from {_mediaUrl}");
                     await CommandHelperChecked("Failed initial clone for Media!", "", "git", new[] {"clone", "--bare", "--depth=1", _mediaUrl, _mediaGitPath }, cancel);
                 }
@@ -294,9 +297,11 @@ namespace SS14.Watchdog.Components.Updates
                         if (!(await GitFetchOrigin(cancel)))
                             throw new Exception("Could not fetch origin");
                         await GitResetToFetchHead(cancel);
-                        if (!(await GitFetchMedia(cancel)))
-                            throw new Exception("Could not fetch media origin");
-                        await GitResetMedia(cancel);
+			if (_mediaUrl != null){
+				if (!(await GitFetchMedia(cancel)))
+				    throw new Exception("Could not fetch media origin");
+				await GitResetMedia(cancel);
+			}
                         await GitCheckedSubmoduleUpdate(cancel);
                     }
                     catch (Exception ex)
