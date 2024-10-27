@@ -297,11 +297,11 @@ namespace SS14.Watchdog.Components.Updates
                         if (!(await GitFetchOrigin(cancel)))
                             throw new Exception("Could not fetch origin");
                         await GitResetToFetchHead(cancel);
-			if (_mediaUrl != null){
-				if (!(await GitFetchMedia(cancel)))
-				    throw new Exception("Could not fetch media origin");
-				await GitResetMedia(cancel);
-			}
+                        if (_mediaUrl != null){
+                                if (!(await GitFetchMedia(cancel)))
+                                    throw new Exception("Could not fetch media origin");
+                                await GitResetMedia(cancel);
+                        }
                         await GitCheckedSubmoduleUpdate(cancel);
                     }
                     catch (Exception ex)
